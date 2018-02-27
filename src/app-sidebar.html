@@ -1,0 +1,210 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="app-sidebar">
+  <template>
+    <style>
+      :host {
+        display: block;
+        margin: 0;
+
+        padding: 15px;
+
+        /*background-color: #90A4AE;*/
+
+        font-family: 'Helvetica Neue', 'Roboto', 'Arial', sans-serif;
+        color: #37474F;
+        
+        /*box-shadow: 0 2px 5px rgba(0, 0, 0, .26);*/
+      }
+
+      h1.app-title {
+        margin: 0;
+        font-size: 1.15em;
+      }
+
+      div#sidebar {
+        display: flex;
+        flex-direction: column;
+      }
+
+      div#sidebar a.path-item {
+        color: black;
+        text-decoration: none;
+        padding: 10px 10px 10px 15px;
+        margin: 1px;
+        border-radius: 5px;
+        /*border-left: solid 3.5px #546E7A;*/
+        transition: background-color .1s ease-in;
+      }
+
+      div#sidebar a.path-item.current {
+        background-color: #CFD8DC;
+      }
+
+      div#sidebar a.path-item:hover {
+        background-color: #B0BEC5;
+      }
+
+      div#sidebar span.path-category {
+        color: black;
+        text-decoration: none;
+        padding: 15px 10px 5px 0;
+        font-weight: bold;
+        font-size: 0.8em;
+        text-transform: uppercase;
+      }
+    </style>
+
+    <div id="sidebar">
+      <!--
+      <template is="dom-repeat" items="{{paths}}" as="path" mutable-data>
+        <template is="dom-if" if="{{path.type == 'item'}}" restamp="true">
+          <a class="path-item" href="#{{path.path}}">{{path.text}}</a>
+        </template>
+        <template is="dom-if" if="{{path.type == 'category'}}" restamp="true">
+          <span class="path-category" href="#{{path.path}}">{{path.text}}</span>
+        </template>
+      </template>
+      -->
+    </div>
+
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class AppSidebar extends Polymer.Element {
+      static get is() { return 'app-sidebar'; }
+      static get properties() {
+        return {
+          width: {
+            type: String,
+            value: "25%",
+            notify: true
+          },
+          showBorder: {
+            type: Boolean,
+            value: false,
+            notify: true
+          },
+          currentPath: {
+            type: String,
+            value: '',
+            observer: '_currentPathChanged',
+            reflectToAttribute: true
+          },
+          paths: {
+            type: Array,
+            value: [
+              { type: "item", path: "/home", text: "Home" },
+              { type: "item", path: "/inbox", text: "Inbox" },
+              { type: "item", path: "/projects", text: "Projects" },
+              { type: "category", text: "Favourites" }
+            ],
+            observer: '_generatePathElements'
+          },
+          favouriteData: {
+            type: Array,
+            observer: '_favouriteDataChange',
+            reflectToAttribute: true
+          }
+        };
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+
+        this.style.width = this.width;
+
+        if (this.showBorder == "true" || (this.showBorder === true && (this.showBorder instanceof Boolean)))
+          this.style.border = "solid 1px red";
+      }
+
+      ready() {
+        super.ready();
+
+        this._generatePathElements();
+      }
+
+      _currentPathChanged(path) {
+        path = path || this.currentPath;
+
+        var c = this.$.sidebar.querySelectorAll("a.path-item.current");
+        c.forEach((e) => {
+          e.classList.remove("current");
+        })
+
+        this.$.sidebar.childNodes.forEach((e) => {
+          if (e.path == path) {
+            e.classList.add("current");
+          }
+        }, this);
+      }
+
+      addPath(obj) {
+        console.log("addPath(obj) => " + obj)
+        if (obj instanceof Object) {
+          this.paths.push(obj);
+          //this._generatePathElements();
+          this._processPathElement(obj);
+        }
+      }
+
+      resetPath() {
+        this.paths = AppSidebar.properties.paths.value;
+      }
+
+      _generatePathElements() {
+        console.log("_generatePathElements");
+        this.$.sidebar.innerHTML = null;
+
+        this.paths.forEach(this._processPathElement, this);
+      }
+
+      _processPathElement(v) {
+        if (!(v instanceof Object)) {
+          console.warn("Path element is not an instance of Object!");
+        } else if (v.type == "item") {
+          var el = document.createElement("a");
+          el.classList.add("path-item");
+          el.href = "#" + v.path;
+          el.path = v.path;
+          el.innerText = v.text;
+
+          this.$.sidebar.appendChild(el);
+
+          if (v.selected === true)
+            this.currentPath = v.path;
+        } else if (v.type == "category") {
+          var el = document.createElement("span");
+          el.classList.add("path-category");
+          el.innerText = v.text;
+
+          this.$.sidebar.appendChild(el);
+
+          if (v.children != undefined && v.children instanceof Array)
+            v.children.forEach(this._processElement, this);
+        } else {
+          console.warn("Invalid path element type: " + v.type);
+        }
+
+        this._currentPathChanged();
+      }
+
+      _favouriteDataChange(data) {
+        this.resetPath();
+        data.forEach((d) => {
+          this.addPath({
+            type: 'item',
+            text: d.name,
+            path: '/project/' + d.id
+          });
+        }, this);
+      }
+    }
+
+    window.customElements.define(AppSidebar.is, AppSidebar);
+  </script>
+</dom-module>

@@ -1,0 +1,778 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="project-view">
+  <template>
+    <style>
+      :host {
+        /*border: solid 1px red;*/
+        display: block;
+
+        font-family: 'Helvetica Neue', 'Roboto', 'Arial', sans-serif;
+        max-width: 50%;
+        overflow-wrap: break-word;
+      }
+
+      .project-header {
+        padding: 25px 15px 20px 15px;
+        background-color: #78909C;
+        border-radius: 5px;
+        color: white;
+        max-width: 100%;
+        border-bottom: solid 10px #90A4AE;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26);
+      }
+
+      #project-title, #project-description {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      #project-title #project-title-text,
+      #project-title #project-title-input,
+      #project-description #project-description-text,
+      #project-description #project-description-input
+      {
+        flex-grow: 1;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+
+        text-decoration: none;
+      }
+
+      #project-title #project-title-text,
+      #project-title #project-title-input {
+        font-weight: bold;
+        font-size: 1.5em;
+        min-height: 1.5em;
+      }
+
+      #project-description #project-description-text,
+      #project-description #project-description-input {
+        font-weight: normal;
+        font-size: 0.85em;
+        min-height: 0.85em;
+        font-style: italic;
+      }
+
+      #project-title #project-favourite {
+        padding: 5px;
+      }
+
+      #project-title #project-title-text:hover,
+      #project-description #project-description-text:hover {
+        text-decoration: underline;
+        cursor: pointer;
+      }
+
+      #project-title #project-title-input {
+        display: none;
+      }
+
+      #project-title.editing #project-title-text {
+        display: none;
+      }
+
+      #project-title.editing #project-title-input {
+        display: block;
+      }
+
+      #project-description #project-description-input {
+        display: none;
+      }
+
+      #project-description.editing #project-description-text {
+        display: none;
+      }
+
+      #project-description.editing #project-description-input {
+        display: block;
+      }
+
+      #project-options {
+        display: flex;
+        flex-direction: row;
+        height: auto;
+        margin: 10px 0 5px 0;
+        background-color: white /*#ECEFF1*/;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26);
+        align-items: center;
+        overflow-y: hidden;
+      }
+
+      #project-options * {
+        margin: 0;
+        padding: 10px;
+        border: none;
+        background-color: white;
+        color: #616161;
+        border-right: solid 0.5px rgba(32, 32, 32, .26);
+        cursor: pointer;
+        height: 100%;
+      }
+      
+      #project-options input {
+        margin: 0 5px 0 5px;
+      }
+
+      #project-options input:hover {
+        display: block;
+        color: black;
+      }
+
+      #project-options button:hover {
+        background-color: #9E9E9E;
+        color: white;
+      }
+
+      #project-options button.encourage:hover {
+        background-color: #03A9F4;
+      }
+
+      #project-options button.danger:hover {
+        background-color: #F44336;
+      }
+
+      #project-options button:active {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26) inset;
+        color: black;
+      }
+
+      #project-items {
+        display: flex;
+        flex-direction: column;
+        max-width: 100%;
+      }
+
+      #project-items > * {
+        padding: 15px;
+        border-radius: 5px;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26);
+        margin: 5px 0 5px 0;
+        max-width: 100%;
+      }
+      
+      .todo-al-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .todo-al-row {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .todo-item {
+        max-width: 100%;
+      }
+      
+      .todo-item .todo-description {
+        display: none;
+        margin-top: 5px;
+      }
+
+      .todo-description-text {
+        font-style: italic;
+        color: #616161;
+        padding-right: 15px;
+        font-size: 0.85em;
+      }
+
+      .todo-item:hover .todo-description,
+      .todo-item:hover .todo-item-remove,
+      .todo-description.editing {
+        display: block;
+      }
+
+      div.todo-item-remove {
+        display: none;
+        flex-grow: 1;
+      }
+
+      div.todo-item-remove span {
+        width: 1.25em;
+        height: 1.25em;
+        padding: 1px 5px 2px 5px;
+        margin: -5px 0 0 0;
+        font-size: 0.75em;
+        text-align: center;
+        border-radius: 100%;
+        background-color: #EFEFEF;
+        color: #C0C0C0;
+        /*color: #F44336;*/
+      }
+
+      div.todo-item-remove span:hover {
+        cursor: pointer;
+        background-color: #F44336;
+        color: white;
+      }
+
+      .todo-title-text:hover,
+      .todo-description-text:hover {
+        text-decoration: underline;
+        cursor: pointer;
+        color: blue;
+      }
+
+      .todo-title .todo-title-text,
+      .todo-title .todo-title-input,
+      .todo-description .todo-description-text,
+      .todo-description .todo-description-input {
+        display: block;
+        flex-grow: 2;
+        width: 100%;
+      }
+
+      .todo-title .todo-title-input,
+      .todo-description .todo-description-input {
+        display: none;
+      }
+
+      .todo-title.editing .todo-title-text,
+      .todo-description.editing .todo-description-text {
+        display: none;
+      }
+
+      .todo-title.editing .todo-title-input,
+      .todo-description.editing .todo-description-input {
+        display: block;
+      }
+
+
+    </style>
+
+    <div class="project-header">
+      <div id="project-title">
+        <span id="project-title-text">[[data.name]]</span>
+        <input type="text" id="project-title-input" value="">
+        <input type="checkbox" id="project-favourite" checked="[[isFavourite]]">
+      </div>
+      <div id="project-description">
+        <span id="project-description-text">
+          [[data.description]]
+          <template is="dom-if" if="[[!data.description]]">
+            (no description)
+          </template>
+        </span>
+        <input type="text" id="project-description-input" value="">
+      </div>
+    </div>
+    <div id="project-options">
+      <button class="encourage" id="project-add-item">Add Item</button>
+      <button id="project-completed-visibility">
+        <template is="dom-if" if="[[showCompleted]]">
+          Hide Completed
+        </template>
+        <template is="dom-if" if="[[!showCompleted]]">
+          Show Completed
+        </template>
+      </button>
+      <button class="danger" id="project-delete" hidden$="[[!isEditable]]">Delete Project</button>
+      <input type="search" id="project-search" value="" placeholder="Search">
+    </div>
+    <div id="project-items">
+      
+    </div>
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class ProjectView extends Polymer.Element {
+      static get is() { return 'project-view'; }
+      static get properties() {
+        return {
+          active: {
+            type: Boolean,
+            observer: '_activeChanged'
+          },
+          data: {
+            type: Object,
+            notify: true
+          },
+          isEditable: {
+            type: Boolean,
+            value: true
+          },
+          showCompleted: {
+            type: Boolean,
+            value: true,
+            observer: '_showCompletedChanged'
+          },
+          childrenData: {
+            type: Array,
+            value: [],
+            observer: '_childrenDataChanged',
+            reflectToAttribute: true
+          },
+          requestDataRefresh: {
+            type: Boolean,
+            notify: true
+          }
+        };
+      }
+
+      static get observers() {
+        return [
+          '_favouriteChanged(data.isFavourite)'
+        ];
+      }
+
+      _favouriteChanged(fav) {
+        this.isFavourite = (fav === 1);
+      }
+
+      _activeChanged(active) {
+        if (active === true) {
+          this.style.display = 'block';
+        } else {
+          this.style.display = 'none';
+        }
+      }
+
+      _childChanged(p) {
+        this.__tmp_prevChanged_p = p;
+
+        var c = {
+          id: parseInt(p.getAttribute('todo-id')),
+          name: p.getAttribute('todo-name'),
+          description: p.getAttribute('todo-description'),
+          isCompleted: parseInt(p.getAttribute('todo-is-completed'))
+        };
+
+        // string undefined because of HTML attribute?
+        if (c.id === 'undefined' || isNaN(c.id)) delete c.id;
+        if (c.name === 'undefined') delete c.name;
+        if (c.description === 'undefined') delete c.description;
+        if (c.isCompleted === 'undefined' || isNaN(c.isCompleted)) delete c.isCompleted;
+
+        if (!c.name) return;
+
+        c.projectId = this.data.id;
+
+        // process.
+        var t = window._yatmAppStore
+        if (c.projectId === 'inbox' || c.projectId === -1)
+          t = t.inbox;
+        else
+          t = t.todos;
+
+        if (c.id === undefined) {
+          t.put(c)
+            .then((id) => {
+              this.__tmp_prevChanged_p.setAttribute('todo-id', id);
+              //alert("Latest item got id: " + id);
+            })
+            .catch((err) => {
+              alert("Cannot make changes: " + err);
+              //window.location.reload();
+            })
+            .finally(() => {
+              this.requestDataRefresh = true;
+            });
+        } else {
+          t.where({id: c.id})
+            .modify(c)
+            .then(() => {
+              this.requestDataRefresh = true;
+            })
+            .catch((err) => {
+              alert("Cannot make changes: " + err);
+              //window.location.reload();
+            })
+            .finally(() => {
+              this.requestDataRefresh = true;
+            });
+        }
+
+        //alert(JSON.stringify(c));
+      }
+
+      _childRemove(p) {
+        var id = parseInt(p.getAttribute('todo-id'));
+        if (isNaN(id)) return;
+
+        var t = window._yatmAppStore
+        if (this.data.id === 'inbox' || this.data.id === -1)
+          t = t.inbox;
+        else
+          t = t.todos;
+
+        t.delete(id)
+          .catch((err) => {
+            alert("Cannot make changes: " + err);
+            //window.location.reload();
+          })
+          .finally(() => {
+            this.requestDataRefresh = true;
+          });
+      }
+
+      _projectRemove() {
+        if (confirm(
+              "Are you sure to remove project '" + this.data.name + "'?" +
+              "\nThis action cannot be undone!"
+            ) !== true)
+          return;
+
+        var d = Object.assign({__delete: true, __ignore: undefined}, this.data);
+        if (d.__ignore) delete d.__ignore;
+        this.data = d;
+
+        /*
+        window._yatmAppStore
+              .todos
+              .where({ projectId: this.data.id })
+              .delete()
+              .then(() => {
+                window._yatmAppStore
+                      .projects
+                      .delete(this.data.id)
+                      .then(() => {
+                        window.location.href = "#/projects";
+                      })
+                      .catch((err) => {
+                        alert("Cannot make changes: " + err);
+                        window.location.reload();
+                      });
+              })
+              .catch((err) => {
+                alert("Cannot make changes: " + err);
+                window.location.reload();
+              });
+        */
+
+      }
+
+      _newItemRequest() {
+        this._childElementProcess({
+          id: undefined,
+          name: '',
+          description: '',
+          isCompleted: 0
+        }, true);
+      }
+
+      _showCompletedChanged() {
+        this._childrenDataChanged(this.childrenData);
+      }
+
+      _childrenDataChanged(children) {
+        this.$['project-items'].innerHTML = null;
+        children.forEach(this._childElementProcess, this);
+      }
+
+      _childElementProcess(child, newItem=false) {
+        var wr, tt, td, el, e, k;
+
+        if ((this.showCompleted === false && child.isCompleted === 1) ||
+            (child.id === undefined && newItem === false)) return;
+
+        /*
+        <div class="todo-al-row todo-item" todo-id=":id">
+          <input type="checkbox">
+          <div class="todo-al-column">
+            <div class="todo-al-row todo-title">
+              <span class="todo-name-text">:name</span>
+              <input class="todo-name-input" type="text">
+            </div>
+            <div class="todo-al-row todo-description">
+              <span class="todo-description-text">:description</span>
+              <input class="todo-description-input" type="text">
+            </div>
+          </div>
+        </div>
+        */
+
+        //.
+        var f_cancel = (evt) => {
+          var p = evt.target.parentNode,
+              pp = p.parentNode.parentNode,
+              v = evt.target.value;
+          p.classList.remove('editing');
+          if (pp.classList.contains('todo-is-new') === true/* && !v*/) {
+            pp.parentNode.removeChild(pp);
+          }
+        };
+
+        //.
+
+        wr = document.createElement('div');
+        wr.classList.add('todo-al-row');
+        wr.classList.add('todo-item');
+        if (newItem === true)
+          wr.classList.add('todo-is-new');
+        wr.setAttribute('todo-id', child.id);
+        wr.setAttribute('todo-name', child.name);
+        wr.setAttribute('todo-description', (child.description) ? child.description : '');
+        wr.setAttribute('todo-is-completed', (child.isCompleted === 1) ? 1 : 0);
+
+        el = document.createElement('input');
+        el.type = 'checkbox';
+        el.checked = (child.isCompleted === 1) ? true : false;
+        el.style.marginRight = '15px';
+        el.style.minWidth = '25px';
+        el.addEventListener('change', (evt) => {
+          var p = evt.target.parentNode;
+          p.setAttribute('todo-is-completed', (evt.target.checked === true) ? 1 : 0);
+          this._childChanged(p);
+        });
+
+        wr.append(el);
+
+        //.
+        tt = document.createElement('div');
+        tt.classList.add('todo-al-column');
+        tt.style.width = "100%";
+
+        //.
+        td = document.createElement('div');
+        td.classList.add('todo-al-row');
+        td.classList.add('todo-title');
+
+        e = document.createElement('span');
+        e.classList.add('todo-title-text');
+        e.innerText = ((child.name) ? child.name : '#NONAME!');
+        e.addEventListener('click', (evt) => {
+          var p = evt.target.parentNode,
+              pp = p.parentNode.parentNode,
+              i = p.querySelector('.todo-title-input');
+          i.value = pp.getAttribute('todo-name');
+          p.classList.add('editing');
+          i.focus();
+        });
+
+        td.append(e);
+
+        el = document.createElement('input');
+        el.classList.add('todo-title-input');
+        el.addEventListener('keypress', (evt) => {
+          var p = evt.target.parentNode,
+              pp = p.parentNode.parentNode,
+              i = p.querySelector('.todo-title-text'),
+              v = evt.target.value;
+
+          if (evt.key == 'Enter' && v) {
+            pp.setAttribute('todo-name', v);
+            i.innerText = evt.target.value;
+            if (pp.classList.contains('todo-is-new'))
+              pp.classList.remove('todo-is-new');
+            this._childChanged(pp);
+          }
+          
+          if (evt.key == 'Enter' || evt.key == 'Escape') {
+            f_cancel(evt);
+          } 
+        });
+        el.addEventListener('blur', f_cancel);
+
+        td.append(el);
+
+        el = document.createElement("div");
+        el.classList.add("todo-item-remove");
+        
+        k = document.createElement("span");
+        k.innerText = 'x';
+        k.addEventListener('click', (evt) => {
+          var pp = evt.target.parentNode.parentNode.parentNode.parentNode;
+          if (confirm(
+                "Are you sure to remove '" + pp.getAttribute('todo-name') + "'?" +
+                "\nThis action cannot be undone!"
+              ) === true) {
+            this._childRemove(pp);
+          }
+        });
+
+        el.append(k);
+
+        td.append(el);
+
+        tt.append(td);
+
+        //.
+        td = document.createElement('div');
+        td.classList.add('todo-al-row');
+        td.classList.add('todo-description');
+
+        el = document.createElement('span');
+        el.classList.add('todo-description-text');
+        el.innerText = (child.description) ? child.description : '(no description)';
+        el.addEventListener('click', (evt) => {
+          var p = evt.target.parentNode,
+              pp = p.parentNode.parentNode,
+              i = p.querySelector('.todo-description-input');
+          i.value = pp.getAttribute('todo-description') || '';
+          p.classList.add('editing');
+          i.focus();
+        });
+
+        td.append(el);
+
+        el = document.createElement('input');
+        el.classList.add('todo-description-input');
+        el.addEventListener('keypress', (evt) => {
+          var p = evt.target.parentNode,
+              pp = p.parentNode.parentNode,
+              i = p.querySelector('.todo-description-text'),
+              v = evt.target.value;
+
+          if (evt.key == 'Enter') {
+            pp.setAttribute('todo-description', v);
+            i.innerText = (v) ? v : '(no description)';
+            this._childChanged(pp);
+          }
+          
+          if (evt.key == 'Enter' || evt.key == 'Escape') {
+            p.classList.remove('editing');
+          } 
+        });
+        el.addEventListener('blur', f_cancel);
+
+        td.append(el);
+        tt.append(td);
+
+        //..
+        wr.append(tt);
+        this.$['project-items'].append(wr);
+
+        //.
+        if (newItem === true)
+          e.click();
+      }
+
+      ready() {
+        super.ready();
+
+        // options
+        this.$['project-add-item']
+            .addEventListener('click', (evt) => {
+              this._newItemRequest();
+            });
+
+        this.$['project-completed-visibility']
+            .addEventListener('click', (evt) => {
+              this.showCompleted = !this.showCompleted;
+            });
+
+        if (this.$['project-delete'])
+          this.$['project-delete']
+              .addEventListener('click', (evt) => {
+                this._projectRemove();
+              });
+
+        // descriptions
+        this.$['project-title-text']
+              .addEventListener('click', (evt) => {
+                if (!this.isEditable) return;
+                this.$['project-title-input'].value = this.data.name;
+                evt.target.parentNode.classList.add('editing');
+                this.$['project-title-input'].focus();
+              });
+
+        this.$['project-description-text']
+              .addEventListener('click', (evt) => {
+                if (!this.isEditable) return;
+                this.$['project-description-input'].value = this.data.description;
+                evt.target.parentNode.classList.add('editing');
+                this.$['project-description-input'].focus();
+              });
+
+        //.
+        var f_change = (evt) => {
+          //alert("this.isEditable = " + this.isEditable);
+          var t = Object.assign({}, this.data);
+          if (evt.target.id == 'project-title-input' && evt.target.value)
+            t.name = evt.target.value;
+          else if (evt.target.id == 'project-description-input')
+            t.description = evt.target.value;
+          else if (evt.target.id == 'project-favourite') {
+            if (!this.isEditable) {
+              evt.target.checked = !evt.target.checked;
+            } else if (evt.target.checked == true)
+              t.isFavourite = 1;
+            else
+              t.isFavourite = 0;
+          }
+          if (t.__ignore) delete t.__ignore;
+          if (this.isEditable === true)
+              this.data = t;
+          //alert(JSON.stringify(this.data));
+          evt.target.parentNode.classList.remove('editing');
+        };
+
+        var f_cancel = (evt) => {
+          evt.target.parentNode.classList.remove('editing');
+        };
+
+        this.$['project-title-input']
+              .addEventListener('keypress', (evt) => {
+                if (evt.key == 'Enter') {
+                  f_change(evt);
+                } else if (evt.key == 'Escape') {
+                  f_cancel(evt);
+                }
+              });
+
+        this.$['project-title-input']
+              .addEventListener('blur', f_cancel);
+
+        this.$['project-description-input']
+              .addEventListener('keypress', (evt) => {
+                if (evt.key == 'Enter') {
+                  f_change(evt);
+                } else if (evt.key == 'Escape') {
+                  f_cancel(evt);
+                }
+              });
+
+        this.$['project-description-input']
+              .addEventListener('blur', f_cancel);
+
+        this.$['project-favourite']
+              .addEventListener('change', f_change);
+
+        this.$['project-search']
+            .addEventListener('input', (evt) => {
+              var v = evt.target.value,
+                  t = window._yatmAppStore,
+                  td = false;
+
+              if (this.data.id === 'inbox' || this.data.id === -1)
+                t = t.inbox;
+              else {
+                t = t.todos;
+                td = true;
+              }
+
+              if (v) {
+                t = t.where('name').startsWithIgnoreCase(v);
+              }
+              
+              if (td) {
+                t = t.filter((todo) => { return todo.projectId === this.data.id; })
+              }
+              
+              t.toArray()
+                .then((arr) => {
+                  this._childrenDataChanged(arr);
+                })
+                .catch((err) => {
+                  console.err("Cannot do search on database: " + err);
+                })
+            });
+      }
+
+    }
+
+    window.customElements.define(ProjectView.is, ProjectView);
+  </script>
+</dom-module>
+

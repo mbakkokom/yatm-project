@@ -1,0 +1,280 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<script src="../bower_components/dexie/dist/dexie.min.js"></script>
+
+<!-- NOTE: THIS IS NOT POLYMER'S APP-STORAGE -->
+
+<dom-module id="app-storage">
+  <template>
+    <style>
+      :host {
+        display: none;
+      }
+    </style>
+  </template>
+
+  <script>
+    class Project {
+      // Prototype method
+      save() {
+        //return window._yatmAppStore.projects.put(this); // Will only save own props.
+      }
+
+      // Prototype property
+      get children() {
+        return window._yatmAppStore.todos.where({projectId: this.id}).toArray();
+      }
+    }
+
+    class Todo {
+      save() {
+        //if (this.projectId === 'inbox' || this.projectId === -1)
+        //  return window._yatmAppStore.inbox.put(this);
+        //else
+        //  return window._yatmAppStore.todos.put(this); // Will only save own props.
+      }
+
+      get parent() {
+        return window._yatmAppStore.projects.where({id: this.projectId}).first();
+      }
+    }
+
+    class AppStorage extends Polymer.Element {
+      static get is() { return 'app-storage'; }
+      static get properties() {
+        return {
+          active: {
+            type: Boolean,
+            value: false,
+            notify: true
+          },
+          favouriteData: {
+            type: Array,
+            notify: true
+          },
+          contentData: {
+            type: Object,
+            notify: true
+          },
+          error: {
+            type: Object,
+            notify: true
+          }
+        };
+      }
+
+      static get observers() {
+        return [
+          '_contentAction(contentData.action)'
+        ];
+      }
+
+      _favouriteDataUpdate() {
+        this.store.projects
+                  .where({ isFavourite: 1 })
+                  .toArray()
+                  .then((p) => {
+                    this.favouriteData = p;
+                  }, this)
+                  .catch((err) => { this.error = err; }, this);
+      }
+
+      _typeIsNumber(v) {
+        return (v !== undefined && v !== null && (v instanceof Number || typeof v == 'number'));
+      }
+
+      _typeIsString(v) {
+        return (v !== undefined && v !== null && (v instanceof String || typeof v === 'string'));
+      }
+
+      _sanitiseTodo(todo, stripUndefined=false) {
+        var t = {
+          id: (this._typeIsNumber(todo.id)) ? todo.id : undefined,
+          projectId:  (this._typeIsNumber(todo.projectId) || todo.projectId === 'inbox') ? todo.projectId : undefined,
+          name: (this._typeIsString(todo.name)) ? todo.name : undefined,
+          description: (this._typeIsString(todo.description)) ? todo.description : undefined,
+          isCompleted: (this._typeIsNumber(todo.isCompleted)) ? todo.isCompleted : undefined
+        }
+        if (stripUndefined === true) {
+          ['id', 'projectId', 'name', 'description', 'isCompleted'].forEach((k) => {
+            if (t[k] === undefined) delete t[k];
+          });
+        }
+        return t;
+      }
+
+      _sanitiseProject(project, stripUndefined=false) {
+        var t = {
+          id: (this._typeIsNumber(project.id)) ? project.id : undefined,
+          name: (this._typeIsString(project.name)) ? project.name : undefined,
+          description: (this._typeIsString(project.description)) ? project.description : undefined,
+          isFavourite: (this._typeIsNumber(project.isFavourite)) ? project.isFavourite : undefined
+        }
+        if (stripUndefined === true) {
+          ['id', 'name', 'description', 'isFavourite'].forEach((k) => {
+            if (t[k] === undefined) delete t[k];
+          });
+        }
+        return t;
+      }
+
+      _contentAction(action) {
+        console.log("_contentAction(action) => " + action);
+        if (action === 'listTodo') {
+          this._contentTodoList(this.contentData.todo);
+        } else if (action === 'createTodo' && this.contentData.todo instanceof Object) {
+          this._contentTodoCreate(this.contentData.todo);
+        } else if (action === 'updateTodo' && this.contentData.todo instanceof Object) {
+          this._contentTodoUpdate(this.contentData.todo);
+        } else if (action === 'deleteTodo' && this.contentData.todo instanceof Object) {
+          this._contentTodoDelete(this.contentData.todo);
+        } else if (action === 'listProject') {
+          this._contentProjectList(this.contentData.project);
+        } else if (action === 'createProject' && this.contentData.project instanceof Object) {
+          this._contentProjectCreate(this.contentData.project);
+        } else if (action === 'updateProject' && this.contentData.project instanceof Object) {
+          this._contentProjectUpdate(this.contentData.project);
+        } else if (action === 'deleteProject' && this.contentData.project instanceof Object) {
+          this._contentProjectDelete(this.contentData.project);
+        }
+      }
+
+      _contentTodoList(todo) {
+        var c = this.store.todos;
+        if (todo instanceof Object) {
+          if (todo.projectId === 'inbox' || todo.projectId === -1) c = this.store.inbox;
+          c = c.where(this._sanitiseTodo(todo, true));
+        }
+        c.toArray()
+          .then((d) => {
+            this.contentData = { todos: d };
+          }, this)
+          .catch((err) => { this.error = err; }, this);
+      }
+
+      _contentTodoCreate(todo) {
+        var c = this.store.todos, t;
+        if (todo instanceof Object) {
+          if (todo.projectId === 'inbox') c = this.store.inbox;
+          t = this._sanitiseTodo(todo);
+        }
+        if (t.id) delete t.id;
+        c.put(t)
+          .catch((err) => { this.error = err; }, this);
+      }
+
+      _contentTodoUpdate(todo) {
+        var c = this.store.todos, t = this._sanitiseTodo(todo, true);
+        if (t.projectId === 'inbox' || t.projectId === -1) c = this.store.inbox;
+        c.update(t.id, t)
+          .catch((err) => { this.error = err; }, this);
+      }
+
+      _contentTodoDelete(todo) {
+        var c = this.store.todos, t = this._sanitiseTodo(todo, true);
+        if (t.projectId === 'inbox' || t.projectId === -1) c = this.store.inbox;
+        c.delete(t.id)
+          .catch((err) => { this.error = err; }, this);
+      }
+
+      _contentProjectList(project) {
+        var c = this.store.projects;
+        if (project instanceof Object) {
+          if (project.id == 'inbox' || project.id == -1) {
+            this.store.inbox
+                      .toArray()
+                      .then((d) => {
+                        this.contentData = { todos: d };
+                      })
+                      .catch((err) => { this.error = err; }, this);
+            return;
+          }
+          c = c.where(this._sanitiseProject(project, true));
+        }
+        c.toArray()
+          .then((d) => {
+            this.contentData = { projects: d };
+          })
+          .catch((err) => { this.error = err; }, this);
+      }
+
+      _contentProjectCreate(project) {
+        var t = this._sanitiseProject(project),
+            c = (t.id == 'inbox' || t.id == -1) ? this.store.inbox : this.store.projects;
+        if (t.id) delete t.id;
+        c.put(t)
+          .then((id) => {
+          this.store.projects
+                    .where({id: id})
+                    .first()
+                    .then((e) => {
+                      if (this.contentData.__redir === true) {
+                        window.location.href = "#/project/" + e.id;
+                      } else {
+                        this.contentData = { __createProject: true, projects: e };
+                      }
+                      if (e.isFavourite === 1) this._favouriteDataUpdate();
+                    });
+          })
+          .catch((err) => { this.error = err; }, this);
+      }
+
+      _contentProjectUpdate(project) {
+        var t = this._sanitiseProject(project, true);
+        if (t.id == 'inbox' || t.id == -1) return;
+        this.store.projects
+                  .update(t.id, t)
+                  .then(() => {
+                    if (t.isFavourite !== undefined) this._favouriteDataUpdate();
+                  })
+                  .catch((err) => { this.error = err; }, this);
+      }
+
+      _contentProjectDelete(project) {
+        if (project.id == 'inbox' || project.id == -1) return;
+        var id = this._sanitiseProject(project, true).id;
+        this.store.todos
+                  .where({ projectId: id })
+                  .delete()
+                  .then(() => {
+                    this.store.projects
+                              .delete(id)
+                              .then(() => {
+                                this._favouriteDataUpdate();
+                                window.location.href = "#/projects";
+                              })
+                              .catch((err) => { this.error = err; }, this);
+                  }).catch((err) => { this.error = err; }, this);
+      }
+
+      _constructStore() {
+        var store = new Dexie("yatm_app_store");
+        store.version(1).stores({
+          inbox:  "++id, projectId, name, description, isCompleted",
+          projects: "++id, name, description, isFavourite",
+          todos: "++id, projectId, name, description, isCompleted"
+        });
+
+        store.inbox.mapToClass(Todo);
+        store.projects.mapToClass(Project);
+        store.todos.mapToClass(Todo);
+
+        this.store = store;
+        window._yatmAppStore = this.store;
+      }
+
+      ready() {
+        super.ready();
+
+        this._constructStore();
+
+        this.active = true;
+        console.log("app-storage ready.");
+
+        this._favouriteDataUpdate();
+      }
+    }
+
+    window.customElements.define(AppStorage.is, AppStorage);
+  </script>
+</dom-module>

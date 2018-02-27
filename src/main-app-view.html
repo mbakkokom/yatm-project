@@ -1,0 +1,203 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../bower_components/app-route/app-location.html">
+<link rel="import" href="../bower_components/app-route/app-route.html">
+
+<link rel="import" href="app-storage.html">
+<link rel="import" href="app-header.html">
+<link rel="import" href="app-sidebar.html">
+
+<link rel="import" href="content-view.html">
+
+<dom-module id="main-app-view">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+
+      app-header {
+        position: fixed;
+        top: 0px;
+        left: 0px;
+
+        width: 100vw;
+        max-height: 15vh;
+
+        z-index: 10000;
+      }
+
+      div#app-body-root {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+
+        width: 100vw;
+        max-width: 100vw;
+        min-height: 100vh;
+
+        overflow-x: hidden;
+
+        background-color: #ECEFF1;
+        z-index: 0;
+      }
+
+      div.body-content {
+        position: relative;
+        margin-left: 20%;
+        padding: 15px 25px 25px 25px;
+        width: 100%;
+        max-width: 75%;
+      }
+
+      @media screen and (min-width: 701px) {
+        div.body-wrapper {
+          display: flex;
+          flex-direction: row;
+
+          padding: 15px /*75px 15px 15px 15px*/;
+          width: 100%;
+          max-width: 85vw;
+          margin: auto;
+        }
+
+        app-sidebar#sidebar {
+          position: fixed;
+
+          max-height: 75vh;
+          max-width: 15%;
+          overflow-x: hidden;
+          overflow-y: scroll;
+        }
+      }
+
+      @media screen and (max-width: 750px) {
+        div.body-wrapper {
+          display: flex;
+          flex-direction: row;
+
+          padding: 15px /*75px 15px 15px 15px*/;
+          width: 100%;
+          max-width: 95vw;
+          margin: auto;
+        }
+
+        app-sidebar#sidebar {
+          position: fixed;
+
+          max-height: 75vh;
+          max-width: 25%;
+          overflow-x: hidden;
+          overflow-y: scroll;
+        }
+      }
+    </style>
+
+    <app-storage active="{{storageReady}}" content-data="{{contentData}}" favourite-data="{{favouriteData}}"></app-storage>
+    
+    <app-location route="{{route}}" use-hash-as-path></app-location>
+    <app-route route="{{route}}"
+               pattern="/:page"
+               tail="{{projectRoute}}"
+               data="{{pageRouteData}}"
+               active="{{pageRouteActive}}">
+    </app-route>
+    <app-route route="{{projectRoute}}"
+               pattern="/:project"
+               data="{{projectRouteData}}"
+               active="{{projectRouteActive}}">
+    </app-route>
+    
+    <!--
+    <app-header title="[[title]]"></app-header>
+    -->
+    <div id="app-body-root">
+      <div class="body-wrapper">
+        <app-sidebar id="sidebar" show-border="false" current-path="{{currentPath}}" favourite-data="{{favouriteData}}"></app-sidebar>
+        <div class="body-content">
+          <content-view page="{{currentPage}}" project="{{currentProject}}" is-project="{{projectRouteActive}}" content-data="{{contentData}}"></content-view>
+          <app-footer></app-footer>
+        </div>
+      </div>
+    </div>
+    
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class MainAppView extends Polymer.Element {
+      static get is() { return 'main-app-view'; }
+      static get properties() {
+        return {
+          title: {
+            type: String,
+            value: 'Yet Another Task Manager'
+          },
+          currentPage: {
+            type: String,
+            reflectToAttribute: true,
+            notify: true
+          },
+          currentProject: {
+            type: String,
+            reflectToAttribute: true,
+            notify: true
+          },
+          route: Object,
+          pageRouteData: Object,
+          projectRoute: String,
+          projectRouteData: Object,
+          pageRouteActive: Boolean,
+          projectRouteActive: {
+            type: Boolean,
+            notify: true
+          },
+          currentPath: {
+            type: String,
+            notify: true
+          },
+          storageReady: Boolean,
+          contentData: Object,
+          favouriteData: Object
+        };
+      }
+
+      static get observers() {
+        return [
+          '_routePageChanged(pageRouteData.page)',
+          '_routeProjectChanged(projectRouteData.project)',
+          '_routePathChanged(route.path)'
+        ];
+      }
+
+      _routePageChanged(page) {
+        console.log("_pageChanged(page) => " + page);
+        this.currentPage = page ? page : 'home';
+      }
+
+      _routeProjectChanged(project) {
+        console.log("_projectChanged(project) => " + project);
+        this.currentProject = project || null;
+      }
+
+      _routePathChanged(path) {
+        this.currentPath = path || '/home';
+        console.log('_routePathChanged(path) => ' + this.currentPath);
+        //this._routePageChanged(this.pageRouteData.page);
+      }
+
+      ready() {
+        super.ready();
+      }
+
+      connectedCallback() {
+        super.connectedCallback();
+      }
+    }
+
+    window.customElements.define(MainAppView.is, MainAppView);
+  </script>
+</dom-module>

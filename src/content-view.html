@@ -1,0 +1,258 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="project-view.html">
+<link rel="import" href="project-list.html">
+
+<dom-module id="content-view">
+  <template>
+    <style>
+      :host {
+        display: block;
+        margin: 0;
+        max-width: 100%;
+      }
+
+      project-view, project-list, div.home-view {
+        max-width: 100%;
+        overflow-wrap: wrap;
+      }
+
+      div.home-view {
+        font-family: 'Helvetica Neue', 'Roboto', 'Arial', sans-serif;
+        overflow-wrap: break-word;
+      }
+    </style>
+    
+    <!--
+    <h1>Hello World!</h1>
+    <hr>
+    Currently on page <strong>[[page]]</strong>!<br>
+    <template is="dom-if" if="{{isProject}}" restamp="true">
+      Currently on project <strong>[[project]]</strong>!<br>
+    </template>
+    -->
+
+    <project-view id="project-view"
+                  active="{{projectActive}}"
+                  data="{{projectData}}"
+                  children-data="{{childrenData}}"
+                  is-editable="{{projectEditable}}"
+                  request-data-refresh="{{childrenDataRefresh}}">
+    </project-view>
+    <project-list id="project-list"
+                  active="{{listActive}}"
+                  data="{{listData}}">
+    </project-list>
+    <div class="home-view" hidden$="[[!isHome]]">
+      <h1>Hello World!</h1>
+      <p>
+        This is <strong>Yet Another Task Manager</strong> (or <i><strong>Why</strong> Another Task Manager</i>),
+        a simple web-based 'list manager'.
+      </p>
+      <p>
+        In actuality, this is merely an experiment with Polymer, Web Components, and IndexedDB.
+        This stores data on your computer using the IndexedDB API and process it locally (so much for web-based, isn't it?).
+      </p>
+      <p>
+        If you encountered quirks or such, please treat it as 'a feature'.
+        This is truly just a tryout and any attempt to develop it further would require a complete or major rewrite.
+        <i>(Oh, God, why async??)</i>
+      </p>
+      <p>
+        Have fun!
+      </p>
+    </div>
+
+    <div id="dbg">
+    </div>
+
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class ContentView extends Polymer.Element {
+      static get is() { return 'content-view'; }
+      static get properties() {
+        return {
+          page: {
+            type: String,
+            observer: '_pageChanged'
+          },
+          project: {
+            type: Number,
+            observer: '_pageChanged'
+          },
+          isHome: {
+            type: Boolean,
+            notify: true
+          },
+          isProject: {
+            type: Boolean,
+            observer: '_projectActive',
+            reflectToAttribute: true
+          },
+          projectActive: {
+            type: Boolean,
+            notify: true
+          },
+          contentData: {
+            type: Object,
+            observer: '_contentDataChanged',
+            reflectToAttribute: true,
+            notify: true
+          },
+          projectData: {
+            type: Object,
+            observer: '_projectDataChanged',
+            reflectToAttribute: true,
+            notify: true
+          },
+          childrenData: {
+            type: Array,
+            notify: true
+          },
+          projectEditable: {
+            type: Boolean,
+            notify: true
+          },
+          childrenDataRefresh: {
+            observer: '_childrenDataRefresh',
+            reflectToAttribute: true
+          },
+          listActive: {
+            type: Boolean,
+            notify: true
+          },
+          listData: {
+            type: Object,
+            notify: true
+          }
+        };
+      }
+
+      _projectActive(active) {
+        if (active === true || this.page == "inbox") {
+          this.projectActive = true;
+        } else {
+          this.projectActive = false;
+        }
+      }
+
+      _listActive() {
+        this.listActive = (this.page == "projects") ? true : false;
+      }
+
+      _pageChanged() {
+        this.isHome = false;
+
+        if (this.page == "home") {
+          this.isHome = true;
+        } else if (this.page == "inbox") {
+          this.contentData = {
+            __ignore: true,
+            action: 'listProject',
+            project: { id: 'inbox' }
+          }
+        } else if (this.page == "project" && this.isProject) {
+          this.contentData = {
+            __ignore: true,
+            action: 'listProject',
+            project: { id: parseInt(this.project) }
+          }
+        } else if (this.page == "projects") {
+          this.contentData = {
+            __ignore: true,
+            action: 'listProject'
+          };
+        }
+
+        this._projectActive(this.isProject);
+        this._listActive();
+      }
+
+      _contentDataChanged(data) {
+        if (data.__ignore === true) return;
+
+        this.$.dbg.innerHTML = null;
+        this._projectActive(this.isProject);
+        this.isHome = false;
+
+        if (this.page == "inbox") {
+          this.projectEditable = false;
+          this.projectData = {
+            __ignore: true,
+            id: 'inbox',
+            name: 'Inbox',
+            description: 'This is a place for anything.',
+            isFavourite: 1
+          };
+          this.childrenData = data.todos;
+        } else if (this.page == "project" && this.isProject && data.projects instanceof Array) {
+          if (data.projects.length == 1) {
+            var d = data.projects[0];
+            /*
+            this.$.dbg.innerText = "Project found: " + JSON.stringify(data.projects[0]) + "\n";
+            data.projects[0].children.then((d) => {
+              this.$.dbg.innerText += JSON.stringify(d);
+            }).catch((e) => {
+              this.$.dbg.innerText += "Cannot fetch children: " + e;
+            });
+            */
+            d.children.then((c) => {
+              this.projectData = Object.assign({__ignore: true}, d);
+              this.childrenData = c;
+              this.projectEditable = true;
+            }).catch((err) => {
+              this._projectActive(false);
+              alert("Failed to load project: " + err);
+            });
+          } else {
+            this._projectActive(false);
+            this.$.dbg.innerText = "Project not found!";
+          }
+        } else if (this.page == "projects" && data.projects instanceof Array) {
+          this.__tmp_listData = [];
+          data.projects.forEach((v) => {
+            //alert(JSON.stringify(v));
+            this.__tmp_listData.push(v);
+          }, this);
+          this.listData = this.__tmp_listData;
+        }
+      }
+
+      _childrenDataRefresh(r) {
+        if (r === true) {
+          this._pageChanged();
+          this.childrenDataRefresh = false;
+        }
+      }
+
+      _projectDataChanged(data) {
+        if (data.__ignore === true) return;
+        //alert("stub:_projectDataChanged(data)\n" + JSON.stringify(data));
+
+        if (data.__delete === true) {
+          //alert(JSON.stringify(data));
+          this.contentData = {
+            __ignore: true,
+            action: 'deleteProject',
+            project: { id: data.id }
+          };
+        } else {
+          this.contentData = {
+            __ignore: true,
+            action: 'updateProject',
+            project: data
+          };
+        }
+      }
+
+
+    }
+
+    window.customElements.define(ContentView.is, ContentView);
+  </script>
+</dom-module>

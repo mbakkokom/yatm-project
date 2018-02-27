@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+
+    <title>Yet Another Task Manager</title>
+    <meta name="description" content="Task manager for your daily activities">
+
+    <!-- See https://goo.gl/OOhYW5 -->
+    <link rel="manifest" href="manifest.json">
+
+    <script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+
+    <link rel="import" href="src/main-app-view.html">
+  </head>
+  <body>
+    <noscript>This web application requires Javascript to run!</noscript>
+    <main-app-view></main-app-view>
+    <script>
+      // Register service worker if supported.
+      if ('serviceWorker' in navigator) {
+        console.log("service worker is supported!");
+        navigator.serviceWorker.register('/service-worker.js');
+      } else {
+        console.log("service worker is NOT supported.");
+      }
+    </script>
+  </body>
+</html>

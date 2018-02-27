@@ -1,0 +1,49 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="app-header">
+  <template>
+    <style>
+      :host {
+        display: block;
+        margin: 0;
+
+        padding: 15px;
+
+        background-color: #607D8B; /*rgb(237, 108, 96)*/
+
+        font-family: 'Helvetica Neue', 'Roboto', 'Arial', sans-serif;
+        color: white;
+        
+        box-shadow: 0 2px 5px rgba(0, 0, 0, .26);
+      }
+
+      h1.app-title {
+        margin: 0;
+        font-size: 1.15em;
+      }
+    </style>
+
+    <h1 class="app-title">[[title]]</h1>
+
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class AppHeader extends Polymer.Element {
+      static get is() { return 'app-header'; }
+      static get properties() {
+        return {
+          title: {
+            type: String,
+            value: 'yatm-app'
+          }
+        };
+      }
+    }
+
+    window.customElements.define(AppHeader.is, AppHeader);
+  </script>
+</dom-module>

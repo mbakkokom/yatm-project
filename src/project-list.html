@@ -1,0 +1,369 @@
+<link rel="import" href="../bower_components/polymer/polymer-element.html">
+
+<dom-module id="project-list">
+  <template>
+    <style>
+      :host {
+        /*border: solid 1px red;*/
+        display: block;
+
+        font-family: 'Helvetica Neue', 'Roboto', 'Arial', sans-serif;
+        max-width: 50%;
+        overflow-wrap: break-word;
+      }
+
+      .project-header {
+        padding: 25px 15px 20px 15px;
+        background-color: #78909C;
+        border-radius: 5px;
+        color: white;
+        max-width: 100%;
+        border-bottom: solid 10px #90A4AE;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26);
+      }
+
+      #project-title, #project-description {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      #project-title #project-title-text,
+      #project-description #project-description-text
+      {
+        flex-grow: 1;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+
+        text-decoration: none;
+      }
+
+      #project-title #project-title-text {
+        font-weight: bold;
+        font-size: 1.5em;
+        min-height: 1.5em;
+      }
+
+      #project-description #project-description-text {
+        font-weight: normal;
+        font-size: 0.85em;
+        min-height: 0.85em;
+        font-style: italic;
+      }
+
+      #project-options {
+        display: flex;
+        flex-direction: row;
+        height: auto;
+        margin: 10px 0 5px 0;
+        background-color: white /*#ECEFF1*/;
+        border-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26);
+        align-items: center;
+        overflow-y: hidden;
+      }
+
+      #project-options * {
+        margin: 0;
+        padding: 10px;
+        border: none;
+        background-color: white;
+        color: #616161;
+        border-right: solid 0.5px rgba(32, 32, 32, .26);
+        cursor: pointer;
+        height: 100%;
+      }
+      
+      #project-options input {
+        margin: 0 5px 0 5px;
+      }
+
+      #project-options input:hover {
+        display: block;
+        color: black;
+      }
+
+      #project-options button:hover {
+        background-color: #9E9E9E;
+        color: white;
+      }
+
+      #project-options button.encourage:hover {
+        background-color: #03A9F4;
+      }
+
+      #project-options button.danger:hover {
+        background-color: #F44336;
+      }
+
+      #project-options button:active {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26) inset;
+        color: black;
+      }
+
+      #project-items {
+        display: flex;
+        flex-direction: column;
+        max-width: 100%;
+      }
+
+      #project-items > * {
+        padding: 15px;
+        border-radius: 5px;
+        background-color: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .26);
+        margin: 5px 0 5px 0;
+        max-width: 100%;
+        transition: box-shadow 0.1s ease-in;
+      }
+
+      #project-items > *:hover {
+        box-shadow: 0 1px 5px 1px rgba(0, 0, 0, .32);
+      }
+      
+      .project-item-al-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .project-item-al-row {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .project-item {
+        display: block;
+        max-width: 100%;
+        cursor: pointer;
+        text-decoration: none;
+        color: black;
+      }
+      
+      .project-item .project-item-description {
+        display: none;
+        margin-top: 5px;
+      }
+
+      .project-item-description-text {
+        font-style: italic;
+        color: #616161;
+        padding-right: 15px;
+        font-size: 0.85em;
+      }
+
+      .project-item:hover .project-item-description {
+        display: block;
+      }
+  
+      /*
+      .todo-title-text:hover,
+      .todo-description-text:hover {
+        text-decoration: underline;
+        cursor: pointer;
+        color: blue;
+      }
+      */
+
+      .project-item-title .project-item-title-text,
+      .project-item-description .project-item-description-text {
+        display: block;
+        flex-grow: 2;
+        width: 100%;
+      }
+
+      .project-item-is-favourite {
+        color: #616161;
+        font-weight: bold;
+        font-size: 0.85em;
+      }
+
+
+    </style>
+
+    <div class="project-header">
+      <div id="project-title">
+        <span id="project-title-text">Projects</span>
+      </div>
+      <div id="project-description">
+        <span id="project-description-text">
+          List of all projects.
+        </span>
+      </div>
+    </div>
+    <div id="project-options">
+      <button class="encourage" id="project-new">New Project</button>
+      <input type="search" id="project-search" value="" placeholder="Search">
+    </div>
+    <div id="project-items">
+      
+    </div>
+  </template>
+
+  <script>
+    /**
+     * @customElement
+     * @polymer
+     */
+    class ProjectList extends Polymer.Element {
+      static get is() { return 'project-list'; }
+      static get properties() {
+        return {
+          active: {
+            type: Boolean,
+            observer: '_activeChanged'
+          },
+          data: {
+            type: Array,
+            value: [],
+            observer: '_dataChanged',
+            reflectToAttribute: true
+          }
+        };
+      }
+
+      _activeChanged(active) {
+        if (active === true) {
+          this.style.display = 'block';
+        } else {
+          this.style.display = 'none';
+        }
+      }
+
+      _newItemRequest() {
+        var inp = prompt("New project name...");
+        if (inp) {
+          window._yatmAppStore.projects
+                .put({
+                  name: inp,
+                  description: '',
+                  isFavourite: 0
+                })
+                .then((id) => {
+                  window.location.href = "#/project/" + id;
+                })
+                .catch((err) => {
+                  alert("Cannot make changes: " + err);
+                  //window.location.reload();
+                });
+        }
+      }
+
+      _showCompletedChanged() {
+        this._childrenDataChanged(this.childrenData);
+      }
+
+      _dataChanged(projects) {
+        this.$['project-items'].innerHTML = null;
+        if (projects instanceof Array)
+          projects.forEach(this._elementProcess, this);
+      }
+
+      _elementProcess(child) {
+        var wr, tt, td, el;
+
+        /*
+        <div class="todo-al-row todo-item" todo-id=":id">
+          <div class="todo-al-column">
+            <div class="todo-al-row todo-title">
+              <span class="todo-name-text">:name</span>
+              <input class="todo-name-input" type="text">
+            </div>
+            <div class="todo-al-row todo-description">
+              <span class="todo-description-text">:description</span>
+              <input class="todo-description-input" type="text">
+            </div>
+          </div>
+          <input type="checkbox">
+        </div>
+        */
+
+        //.
+
+        wr = document.createElement('a');
+        wr.classList.add('project-item-al-row');
+        wr.classList.add('project-item');
+        //wr.setAttribute('project-id', child.id);
+        wr.href = "#/project/" + child.id;
+
+        //.
+        tt = document.createElement('div');
+        tt.classList.add('project-item-al-column');
+        tt.style.width = "100%";
+
+        //.
+        td = document.createElement('div');
+        td.classList.add('project-item-al-row');
+        td.classList.add('project-item-title');
+
+        el = document.createElement('span');
+        el.classList.add('project-item-title-text');
+        el.innerText = ((child.name) ? child.name : '#NONAME!');
+
+        td.append(el);
+
+        if (child.isFavourite === 1) {
+          el = document.createElement('span');
+          el.classList.add('project-item-is-favourite');
+          el.innerText = '[favourite]';
+          td.append(el);
+        }
+
+        tt.append(td);
+
+        //.
+        td = document.createElement('div');
+        td.classList.add('project-item-al-row');
+        td.classList.add('project-item-description');
+
+        el = document.createElement('span');
+        el.classList.add('project-item-description-text');
+        el.innerText = (child.description) ? child.description : '(no description)';
+
+        td.append(el);
+
+        td.append(el);
+        tt.append(td);
+
+        //..
+        wr.append(tt);
+
+        //
+        this.$['project-items'].append(wr);
+      }
+
+      ready() {
+        super.ready();
+
+        // options
+        this.$['project-new']
+            .addEventListener('click', (evt) => {
+              this._newItemRequest();
+            });
+
+        this.$['project-search']
+            .addEventListener('input', (evt) => {
+              var v = evt.target.value,
+                  t = window._yatmAppStore.projects;
+              if (v) {
+                t = t.where('name').startsWithIgnoreCase(v);
+              }
+              
+              t.toArray()
+                .then((arr) => {
+                  this._dataChanged(arr);
+                })
+                .catch((err) => {
+                  console.err("Cannot do search on database: " + err);
+                })
+            });
+      }
+
+    }
+
+    window.customElements.define(ProjectList.is, ProjectList);
+  </script>
+</dom-module>
+

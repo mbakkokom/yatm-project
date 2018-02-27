@@ -1,0 +1,7 @@
+{
+  "name": "Yet Another Task Manager",
+  "short_name": "Yet Another Task Manager",
+  "description": "Task manager for your daily activities",
+  "start_url": "/",
+  "display": "standalone"
+}
